@@ -109,6 +109,7 @@ def client(user_options = {})
     username: 'root',
     ignore_user: IGNORE_USER,
     logger: Logger.new('/dev/null'),
+    disable_log_bin_local: true,
   }
 
   if ENV['DEBUG']
