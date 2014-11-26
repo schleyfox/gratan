@@ -23,6 +23,7 @@ options = {
   :color                 => true,
   :debug                 => false,
   :ignore_unlisted_users => false,
+  :disable_log_bin_local => true,
 }
 
 ARGV.options do |opt|
@@ -51,6 +52,17 @@ ARGV.options do |opt|
     opt.on(''  , '--debug')                 {    options[:debug]            = true          }
     opt.on(''  , '--auto-identify OUTPUT')  {|v| options[:identifier] = Gratan::Identifier::Auto.new(v, options) }
     opt.on(''  , '--csv-identify CSV')      {|v| options[:identifier] = Gratan::Identifier::CSV.new(v, options)  }
+
+    opt.on(''  , '--disable-log-bin-local BOOL') do |v|
+      case v
+      when 'true'
+        options[:disable_log_bin_local] = true
+      when 'false'
+        options[:disable_log_bin_local] = false
+      else
+        raise "Invalid value for disable-log-bin-local"
+      end
+    end
 
     opt.on('-h', '--help') do
       puts opt.help
