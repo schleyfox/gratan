@@ -59,7 +59,7 @@ class Gratan::Driver
 
     objects.each do |object_or_regexp, object_options|
       expand_object(object_or_regexp).each do |object|
-        grant(user, host, object, grant_options.merge(object_options))
+        grant(user, host, object_options[:object_type], object, grant_options.merge(object_options))
         granted = true
       end
     end
@@ -74,7 +74,7 @@ class Gratan::Driver
     delete(sql)
   end
 
-  def grant(user, host, object, options)
+  def grant(user, host, object_type, object, options)
     privs = options.fetch(:privs)
     identified = options[:identified]
     required = options[:required]
@@ -82,7 +82,7 @@ class Gratan::Driver
 
     sql = 'GRANT %s ON %s TO %s' % [
       privs.join(', '),
-      quote_object(object),
+      quote_object_and_type(object_type, object),
       quote_user(user, host),
     ]
 
@@ -121,38 +121,38 @@ class Gratan::Driver
     update(sql)
   end
 
-  def revoke(user, host, object, options = {})
+  def revoke(user, host, object_type, object, options = {})
     privs = options.fetch(:privs)
     with_option = options[:with]
 
     if with_option =~ /\bGRANT\s+OPTION\b/i
-      revoke0(user, host, object, ['GRANT OPTION'])
+      revoke0(user, host, object_type, object, ['GRANT OPTION'])
 
       if privs.length == 1 and privs[0] =~ /\AUSAGE\z/i
         return
       end
     end
 
-    revoke0(user, host, object, privs)
+    revoke0(user, host, object_type, object, privs)
   end
 
-  def revoke0(user, host, object, privs)
+  def revoke0(user, host, object_type, object, privs)
     sql = 'REVOKE %s ON %s FROM %s' % [
       privs.join(', '),
-      quote_object(object),
+      quote_object_and_type(object_type, object),
       quote_user(user, host),
     ]
 
     delete(sql)
   end
 
-  def update_with_option(user, host, object, with_option)
+  def update_with_option(user, host, object_type, object, with_option)
     options = []
 
     if with_option =~ /\bGRANT\s+OPTION\b/i
       options << 'GRANT OPTION'
     else
-      revoke(user, host, object, :privs => ['GRANT OPTION'])
+      revoke(user, host, object_type, object, :privs => ['GRANT OPTION'])
     end
 
     %w(
@@ -171,7 +171,7 @@ class Gratan::Driver
     end
 
     unless options.empty?
-      grant(user, host, object, :privs => ['USAGE'], :with => options.join(' '))
+      grant(user, host, object_type, object, :privs => ['USAGE'], :with => options.join(' '))
     end
   end
 
@@ -206,6 +206,18 @@ class Gratan::Driver
 
   def quote_object(object)
     object.split('.', 2).map {|i| i == '*' ? i : "`#{i}`" }.join('.')
+  end
+
+  def quote_object_and_type(object_type, object)
+    unless [nil, 'TABLE', 'FUNCTION', 'PROCEDURE'].include?(object_type)
+      object_type = nil
+    end
+
+    if object_type.nil?
+      quote_object(object)
+    else
+      "#{object_type} #{quote_object(object)}"
+    end
   end
 
   def quote_identifier(identifier)

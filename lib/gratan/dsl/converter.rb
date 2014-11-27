@@ -51,9 +51,14 @@ end
 
   def output_object_options(grant)
     with_option = grant.delete(:with)
+    object_type_option = grant.delete(:object_type)
 
-    if with_option
-      options = strip_hash_brace({:with => with_option}.inspect)
+    opts = {}
+    opts[:with] = with_option if with_option
+    opts[:object_type] = object_type_option if object_type_option
+
+    if !opts.empty?
+      options = strip_hash_brace(opts.inspect)
       ", #{options} "
     else
       ' '

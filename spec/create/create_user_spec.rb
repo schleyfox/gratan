@@ -191,4 +191,35 @@ end
       }.to raise_error('User `scott@localhost`: Object `*.*` is already defined')
     end
   end
+
+  context 'when create user with object_type' do
+    around(:each) do |example|
+      create_tables(:foo) do
+        example.run
+      end
+    end
+
+    subject { client }
+
+    it do
+      apply(subject) {
+        <<-RUBY
+user 'scott', 'localhost', identified: 'tiger' do
+  on '*.*' do
+    grant 'USAGE'
+  end
+
+  on "#{TEST_DATABASE}.#{TEST_PROCEDURE}", :object_type=>"PROCEDURE" do
+    grant 'EXECUTE'
+  end
+end
+        RUBY
+      }
+
+      expect(show_grants).to match_array [
+        "GRANT USAGE ON *.* TO 'scott'@'localhost' IDENTIFIED BY PASSWORD '*F2F68D0BB27A773C1D944270E5FAFED515A3FA40'",
+        "GRANT EXECUTE ON PROCEDURE `#{TEST_DATABASE}`.`#{TEST_PROCEDURE}` TO 'scott'@'localhost'",
+      ]
+    end
+  end
 end

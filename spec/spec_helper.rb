@@ -16,6 +16,8 @@ require 'timecop'
 
 IGNORE_USER = /\A(|root)\z/
 TEST_DATABASE = 'gratan_test'
+TEST_FUNCTION = 'hello'
+TEST_PROCEDURE = 'hello_proc'
 
 RSpec.configure do |config|
   config.before(:each) do
@@ -45,6 +47,23 @@ def drop_database(client)
   client.query("DROP DATABASE IF EXISTS #{TEST_DATABASE}")
 end
 
+def create_function(client)
+  client.query(<<-SQL)
+  CREATE FUNCTION #{TEST_DATABASE}.#{TEST_FUNCTION} ()
+  RETURNS CHAR(5) DETERMINISTIC
+  RETURN 'Hello';
+  SQL
+end
+
+def create_procedure(client)
+  client.query(<<-SQL)
+  CREATE PROCEDURE #{TEST_DATABASE}.#{TEST_PROCEDURE} ()
+  BEGIN
+    SELECT 'Hello';
+  END
+  SQL
+end
+
 def create_table(client, table)
   client.query("CREATE TABLE #{TEST_DATABASE}.#{table} (id INT)")
 end
@@ -54,6 +73,8 @@ def create_tables(*tables)
     begin
       drop_database(client)
       create_database(client)
+      create_function(client)
+      create_procedure(client)
       tables.each {|i| create_table(client, i) }
       yield
     ensure

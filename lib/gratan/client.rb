@@ -158,9 +158,9 @@ class Gratan::Client
         actual_options = actual_objects.delete(object)
 
         if actual_options
-          walk_object(user, host, object, expected_options, actual_options)
+          walk_object(user, host, expected_options[:object_type], object, expected_options, actual_options)
         else
-          @driver.grant(user, host, object, expected_options)
+          @driver.grant(user, host, expected_options[:object_type], object, expected_options)
           update!
         end
       end
@@ -168,27 +168,27 @@ class Gratan::Client
 
     actual_objects.each do |object, options|
       options ||= {}
-      @driver.revoke(user, host, object, options)
+      @driver.revoke(user, host, options[:object_type], object, options)
       update!
     end
   end
 
-  def walk_object(user, host, object, expected_options, actual_options)
-    walk_with_option(user, host, object, expected_options[:with], actual_options[:with])
-    walk_privs(user, host, object, expected_options[:privs], actual_options[:privs])
+  def walk_object(user, host, object_type, object, expected_options, actual_options)
+    walk_with_option(user, host, object_type, object, expected_options[:with], actual_options[:with])
+    walk_privs(user, host, object_type, object, expected_options[:privs], actual_options[:privs])
   end
 
-  def walk_with_option(user, host, object, expected_with_option, actual_with_option)
+  def walk_with_option(user, host, object_type, object, expected_with_option, actual_with_option)
     expected_with_option = (expected_with_option || '').upcase
     actual_with_option = (actual_with_option || '').upcase
 
     if expected_with_option != actual_with_option
-      @driver.update_with_option(user, host, object, expected_with_option)
+      @driver.update_with_option(user, host, object_type, object, expected_with_option)
       update!
     end
   end
 
-  def walk_privs(user, host, object, expected_privs, actual_privs)
+  def walk_privs(user, host, object_type, object, expected_privs, actual_privs)
     expected_privs = normalize_privs(expected_privs)
     actual_privs = normalize_privs(actual_privs)
 
@@ -199,13 +199,13 @@ class Gratan::Client
       if revoke_privs.length == 1 and revoke_privs[0] == 'USAGE' and not grant_privs.empty?
         # nothing to do
       else
-        @driver.revoke(user, host, object, :privs => revoke_privs)
+        @driver.revoke(user, host, object_type, object, :privs => revoke_privs)
         update!
       end
     end
 
     unless grant_privs.empty?
-      @driver.grant(user, host, object, :privs => grant_privs)
+      @driver.grant(user, host, object_type, object, :privs => grant_privs)
       update!
     end
   end

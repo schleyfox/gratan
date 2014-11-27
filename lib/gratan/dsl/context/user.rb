@@ -20,6 +20,12 @@ class Gratan::DSL::Context::User
       not @result.has_key?(name)
     end
 
+    if options[:object_type]
+      __validate("Object `#{name}` has invalid object_type") do
+        ["TABLE", "FUNCTION", "PROCEDURE"].include?(options[:object_type])
+      end
+    end
+
     if @options[:enable_expired] and (expired = options.delete(:expired))
       expired = Time.parse(expired)
 
@@ -31,6 +37,7 @@ class Gratan::DSL::Context::User
 
     grant = {:privs => Gratan::DSL::Context::On.new(@user, @host, name, @options, &block).result}
     grant[:with] = options[:with] if options[:with]
+    grant[:object_type] = options[:object_type] if options[:object_type]
     @result[name] = grant
   end
 end
